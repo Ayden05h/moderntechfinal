@@ -27,3 +27,34 @@ The Small Business Data Visualizer is a web application that helps small busines
 ## Project Status
 - **Sprint 1 (MVP)**: Data upload, KPI calculations, basic charts
 - **Sprint 2 (Full Project)**: AI predictions, dashboard summary, export reports, KPI customization
+
+## (MVP)
+- Upload CSV file
+- Preview first 5 rows of data
+- Automatic KPI calculation:
+- Total revenue
+- Total expenses
+- Profit
+- Revenue line chart
+- Basic next-month revenue prediction using Linear Regression
+- Fully containerized (frontend + backend)
+## Technology Stack
+- Frontend
+- React
+- Axios
+- Chart.js
+- Backend
+- FastAPI
+- Pandas
+- scikit-learn
+- Uvicorn
+- Infrastructure
+- Docker
+- Docker Compose
+- Google Cloud Run
+
+## AI Tools Used
+This project used AI tools like:
+ChatGPT for backend design, React UI, Dockerfiles
+GitHub Copilot for autocompleting functions and debugging
+AI assistance logged for transparency
