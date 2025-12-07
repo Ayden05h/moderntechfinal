@@ -27,7 +27,6 @@ function App() {
   headers: { "Content-Type": "multipart/form-data" },
 });
 
-
     setPreview(res.data.preview);
     setKpis(res.data.kpis);
     setForecast(res.data.forecast);
