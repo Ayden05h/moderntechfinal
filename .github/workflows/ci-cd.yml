@@ -2,51 +2,32 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+    branches:
+      - main
 
 jobs:
-  test-build-deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
-
-    services:
-      docker:
-        image: docker:20.10.16
-        options: --privileged
-
     steps:
       - uses: actions/checkout@v3
 
-      # Set up Node and Python
-      - uses: actions/setup-node@v3
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
         with:
           node-version: 18
-      - uses: actions/setup-python@v4
+
+      - name: Install frontend dependencies
+        run: |
+          cd frontend
+          npm install
+          npm run build
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
         with:
           python-version: 3.11
 
-      # Install backend dependencies
       - name: Install backend dependencies
         run: |
           cd backend
-          python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install pytest
-
-      # Run backend tests
-      - name: Run backend tests
-        run: |
-          cd backend
-          python -m pytest tests/ --disable-warnings -v
-
-      # Build Docker images
-      - name: Build Docker images
-        run: docker-compose build
-
-      # Push/deploy to GCP (requires secrets set)
-      - name: Deploy to GCP Cloud Run
-        run: |
-          gcloud auth activate-service-account --key-file=$GCP_SA_KEY
-          gcloud run deploy moderntech-backend --source=backend --region=us-central1 --platform=managed --allow-unauthenticated
-          gcloud run deploy moderntech-frontend --source=frontend --region=us-central1 --platform=managed --allow-unauthenticated

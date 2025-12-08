@@ -58,3 +58,25 @@ This project used AI tools like:
 ChatGPT for backend design, React UI, Dockerfiles
 GitHub Copilot for autocompleting functions and debugging
 AI assistance logged for transparency
+
+### Additional Features
+
+- Predict next month expenses
+- Download KPI report as CSV
+- Color-coded chart with improved visualization
+- Error handling for invalid CSV uploads
+
+## Setup & Installation
+
+### Prerequisites
+
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/)
+- [Node.js & npm](https://nodejs.org/) (optional for local development)
+
+### Running Locally
+
+1. Clone the repository:
+
+```bash
+git clone https://github.com/Ayden05h/moderntechfinal.git
+cd moderntechfinal
