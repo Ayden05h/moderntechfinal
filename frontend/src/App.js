@@ -23,27 +23,38 @@ function App() {
     const formData = new FormData();
     formData.append("file", file);
 
-   const res = await axios.post(`${process.env.REACT_APP_API_URL}/upload`, formData, {
-  headers: { "Content-Type": "multipart/form-data" },
-});
-
-    setPreview(res.data.preview);
-    setKpis(res.data.kpis);
-    setForecast(res.data.forecast);
-
-    // Build chart
-    const months = res.data.preview.map((_, i) => `Month ${i + 1}`);
-    const revenues = res.data.preview.map((row) => row.revenue);
-
-    setChartData({
-      labels: months,
-      datasets: [
+    try {
+      const res = await axios.post(
+        `${process.env.REACT_APP_API_URL}/upload`,
+        formData,
         {
-          label: "Revenue",
-          data: revenues,
-        },
-      ],
-    });
+          headers: { "Content-Type": "multipart/form-data" },
+        }
+      );
+
+      setPreview(res.data.preview);
+      setKpis(res.data.kpis);
+      setForecast(res.data.forecast);
+
+      // Build chart
+      const months = res.data.preview.map((_, i) => `Month ${i + 1}`);
+      const revenues = res.data.preview.map((row) => row.revenue);
+
+      setChartData({
+        labels: months,
+        datasets: [
+          {
+            label: "Revenue",
+            data: revenues,
+            borderColor: "blue",
+            backgroundColor: "lightblue",
+          },
+        ],
+      });
+    } catch (error) {
+      console.error("Error uploading file:", error);
+      alert("Failed to upload file. Make sure it is a valid CSV.");
+    }
   };
 
   return (
