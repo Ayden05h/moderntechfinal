@@ -15,30 +15,34 @@ function App() {
   const [preview, setPreview] = useState([]);
   const [kpis, setKpis] = useState(null);
   const [forecast, setForecast] = useState(null);
+  const [forecastExpenses, setForecastExpenses] = useState(null);
   const [chartData, setChartData] = useState(null);
+  const [uploadError, setUploadError] = useState(null);
 
   const handleUpload = async (e) => {
     const file = e.target.files[0];
+    if (!file) return;
 
     const formData = new FormData();
     formData.append("file", file);
 
     try {
       const res = await axios.post(
-        `${process.env.REACT_APP_API_URL}/upload`,
+        `${process.env.REACT_APP_API_URL || "http://localhost:8000"}/upload`,
         formData,
-        {
-          headers: { "Content-Type": "multipart/form-data" },
-        }
+        { headers: { "Content-Type": "multipart/form-data" } }
       );
 
-      setPreview(res.data.preview);
-      setKpis(res.data.kpis);
-      setForecast(res.data.forecast);
+      // Safely set state
+      setPreview(res.data?.preview ?? []);
+      setKpis(res.data?.kpis ?? null);
+      setForecast(res.data?.forecast ?? null);
+      setForecastExpenses(res.data?.forecast_expenses ?? null);
 
-      // Build chart
-      const months = res.data.preview.map((_, i) => `Month ${i + 1}`);
-      const revenues = res.data.preview.map((row) => row.revenue);
+      // Build chart safely
+      const months = (res.data?.preview ?? []).map((_, i) => `Month ${i + 1}`);
+      const revenues = (res.data?.preview ?? []).map((row) => row.revenue ?? 0);
+      const expenses = (res.data?.preview ?? []).map((row) => row.expenses ?? 0);
 
       setChartData({
         labels: months,
@@ -46,14 +50,27 @@ function App() {
           {
             label: "Revenue",
             data: revenues,
-            borderColor: "blue",
-            backgroundColor: "lightblue",
+            borderColor: "green",
+            backgroundColor: "rgba(0,128,0,0.2)",
+          },
+          {
+            label: "Expenses",
+            data: expenses,
+            borderColor: "red",
+            backgroundColor: "rgba(255,0,0,0.2)",
           },
         ],
       });
-    } catch (error) {
-      console.error("Error uploading file:", error);
-      alert("Failed to upload file. Make sure it is a valid CSV.");
+
+      setUploadError(null);
+    } catch (err) {
+      console.error("Upload failed:", err);
+      setUploadError("Failed to upload CSV. Make sure it has month, revenue, and expenses columns.");
+      setPreview([]);
+      setKpis(null);
+      setForecast(null);
+      setForecastExpenses(null);
+      setChartData(null);
     }
   };
 
@@ -63,31 +80,38 @@ function App() {
 
       <input type="file" onChange={handleUpload} />
 
+      {uploadError && (
+        <p style={{ color: "red", fontWeight: "bold" }}>{uploadError}</p>
+      )}
+
       <hr />
 
       {kpis && (
         <div>
           <h2>KPIs</h2>
-          <p><strong>Total Revenue:</strong> ${kpis.total_revenue}</p>
-          <p><strong>Total Expenses:</strong> ${kpis.total_expenses}</p>
-          <p><strong>Profit:</strong> ${kpis.profit}</p>
+          <p><strong>Total Revenue:</strong> ${kpis.total_revenue ?? 0}</p>
+          <p><strong>Total Expenses:</strong> ${kpis.total_expenses ?? 0}</p>
+          <p><strong>Profit:</strong> ${kpis.profit ?? 0}</p>
+          <p><strong>Profit Margin:</strong> {kpis.profit_margin != null ? (kpis.profit_margin * 100).toFixed(2) : 0}%</p>
 
-          <h3>Next Month Revenue Prediction: ${forecast}</h3>
+          <h3>Next Month Predictions</h3>
+          <p><strong>Revenue:</strong> ${forecast ?? 0}</p>
+          <p><strong>Expenses:</strong> ${forecastExpenses ?? 0}</p>
         </div>
       )}
 
       <hr />
 
-      {chartData && (
-        <div style={{ width: "500px" }}>
-          <h2>Revenue Chart</h2>
+      {chartData && chartData.labels && chartData.datasets && (
+        <div style={{ width: "600px" }}>
+          <h2>Revenue vs Expenses Chart</h2>
           <Line data={chartData} />
         </div>
       )}
 
       <hr />
 
-      {preview.length > 0 && (
+      {preview && preview.length > 0 && preview[0] && (
         <div>
           <h2>Data Preview</h2>
           <table border="1" cellPadding="5">
