@@ -1,137 +1,121 @@
 import React, { useState } from "react";
 import axios from "axios";
-import { Line } from "react-chartjs-2";
 import {
   Chart as ChartJS,
-  LineElement,
   CategoryScale,
   LinearScale,
   PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend
 } from "chart.js";
+import { Line } from "react-chartjs-2";
 
-ChartJS.register(LineElement, CategoryScale, LinearScale, PointElement);
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
 function App() {
+  const [csvFile, setCsvFile] = useState(null);
   const [preview, setPreview] = useState([]);
   const [kpis, setKpis] = useState(null);
   const [forecast, setForecast] = useState(null);
-  const [forecastExpenses, setForecastExpenses] = useState(null);
-  const [chartData, setChartData] = useState(null);
-  const [uploadError, setUploadError] = useState(null);
 
-  const handleUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+  // Replace with your Cloud Run backend URL
+  const BACKEND_URL = "https://backend-1068077487764.us-central1.run.app";
 
-    const formData = new FormData();
-    formData.append("file", file);
+  const handleFileChange = (e) => {
+    setCsvFile(e.target.files[0]);
+  };
 
+  const handleUpload = async () => {
+    if (!csvFile) return alert("Select a CSV file first!");
     try {
-      const res = await axios.post(
-        `${process.env.REACT_APP_API_URL || "http://localhost:8000"}/upload`,
-        formData,
-        { headers: { "Content-Type": "multipart/form-data" } }
-      );
+      const formData = new FormData();
+      formData.append("file", csvFile);
 
-      // Safely set state
-      setPreview(res.data?.preview ?? []);
-      setKpis(res.data?.kpis ?? null);
-      setForecast(res.data?.forecast ?? null);
-      setForecastExpenses(res.data?.forecast_expenses ?? null);
+      const res = await axios.post(`${BACKEND_URL}/upload`, formData);
+      
+      if (res.data.error) {
+        alert(res.data.error);
+        return;
+      }
 
-      // Build chart safely
-      const months = (res.data?.preview ?? []).map((_, i) => `Month ${i + 1}`);
-      const revenues = (res.data?.preview ?? []).map((row) => row.revenue ?? 0);
-      const expenses = (res.data?.preview ?? []).map((row) => row.expenses ?? 0);
-
-      setChartData({
-        labels: months,
-        datasets: [
-          {
-            label: "Revenue",
-            data: revenues,
-            borderColor: "green",
-            backgroundColor: "rgba(0,128,0,0.2)",
-          },
-          {
-            label: "Expenses",
-            data: expenses,
-            borderColor: "red",
-            backgroundColor: "rgba(255,0,0,0.2)",
-          },
-        ],
-      });
-
-      setUploadError(null);
+      setPreview(res.data.preview || []);
+      setKpis(res.data.kpis || {});
+      setForecast(res.data.forecast || 0);
     } catch (err) {
       console.error("Upload failed:", err);
-      setUploadError("Failed to upload CSV. Make sure it has month, revenue, and expenses columns.");
-      setPreview([]);
-      setKpis(null);
-      setForecast(null);
-      setForecastExpenses(null);
-      setChartData(null);
+      alert("Upload failed. Make sure CSV has 'month', 'revenue', 'expenses' columns.");
     }
   };
 
+  const chartData = {
+    labels: preview.map((row) => row.month || ""),
+    datasets: [
+      {
+        label: "Revenue",
+        data: preview.map((row) => row.revenue || 0),
+        borderColor: "green",
+        backgroundColor: "rgba(0,128,0,0.2)"
+      },
+      {
+        label: "Expenses",
+        data: preview.map((row) => row.expenses || 0),
+        borderColor: "red",
+        backgroundColor: "rgba(255,0,0,0.2)"
+      }
+    ]
+  };
+
   return (
-    <div style={{ padding: "20px", fontFamily: "Arial" }}>
-      <h1>Business Data Dashboard</h1>
+    <div style={{ padding: "20px" }}>
+      <h1>Dashboard</h1>
+      <input type="file" accept=".csv" onChange={handleFileChange} />
+      <button onClick={handleUpload}>Upload CSV</button>
 
-      <input type="file" onChange={handleUpload} />
-
-      {uploadError && (
-        <p style={{ color: "red", fontWeight: "bold" }}>{uploadError}</p>
-      )}
-
-      <hr />
-
-      {kpis && (
+      {preview.length > 0 && (
         <div>
-          <h2>KPIs</h2>
-          <p><strong>Total Revenue:</strong> ${kpis.total_revenue ?? 0}</p>
-          <p><strong>Total Expenses:</strong> ${kpis.total_expenses ?? 0}</p>
-          <p><strong>Profit:</strong> ${kpis.profit ?? 0}</p>
-          <p><strong>Profit Margin:</strong> {kpis.profit_margin != null ? (kpis.profit_margin * 100).toFixed(2) : 0}%</p>
-
-          <h3>Next Month Predictions</h3>
-          <p><strong>Revenue:</strong> ${forecast ?? 0}</p>
-          <p><strong>Expenses:</strong> ${forecastExpenses ?? 0}</p>
-        </div>
-      )}
-
-      <hr />
-
-      {chartData && chartData.labels && chartData.datasets && (
-        <div style={{ width: "600px" }}>
-          <h2>Revenue vs Expenses Chart</h2>
-          <Line data={chartData} />
-        </div>
-      )}
-
-      <hr />
-
-      {preview && preview.length > 0 && preview[0] && (
-        <div>
-          <h2>Data Preview</h2>
-          <table border="1" cellPadding="5">
+          <h2>Preview</h2>
+          <table border="1">
             <thead>
               <tr>
-                {Object.keys(preview[0]).map((col) => (
-                  <th key={col}>{col}</th>
+                {Object.keys(preview[0]).map((key) => (
+                  <th key={key}>{key}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {preview.map((row, i) => (
-                <tr key={i}>
-                  {Object.values(row).map((val, j) => (
-                    <td key={j}>{val}</td>
+              {preview.map((row, idx) => (
+                <tr key={idx}>
+                  {Object.values(row).map((val, i) => (
+                    <td key={i}>{val}</td>
                   ))}
                 </tr>
               ))}
             </tbody>
           </table>
+
+          <h2>Revenue vs Expenses Chart</h2>
+          <Line data={chartData} />
+        </div>
+      )}
+
+      {kpis && (
+        <div>
+          <h2>KPIs</h2>
+          <p>Total Revenue: {kpis.total_revenue}</p>
+          <p>Total Expenses: {kpis.total_expenses}</p>
+          <p>Profit: {kpis.profit}</p>
+          <p>Profit Margin: {kpis.profit_margin}</p>
+          <p>Forecast Revenue Next Month: {forecast}</p>
         </div>
       )}
     </div>
