@@ -1,15 +1,24 @@
-FROM node:18
+# Node image for building React app
+FROM node:18-alpine
 
+# Set working directory
 WORKDIR /app
 
-COPY package.json package-lock.json ./
+# Copy package files and install dependencies
+COPY package*.json ./
 RUN npm install
 
+# Copy source files
 COPY . .
 
+# Build React app
 RUN npm run build
 
+# Install serve globally
 RUN npm install -g serve
 
-CMD ["serve", "-s", "build", "-l", "3000"]
+# Use the PORT Cloud Run provides
+ENV PORT 8080
 
+# Start the static server on $PORT
+CMD ["serve", "-s", "build", "-l", "8080"]
